@@ -1,0 +1,29 @@
+[project]
+name = "sql-copilot"
+version = "0.1.0"
+description = "Agentic SQL CLI copilot with schema-aware RAG and safety-gated execution"
+authors = [
+    {name = "Vrinda Kumar (vrinda.kumar2022@vitsudent.ac.in)"}
+]
+license = "MIT"
+requires-python = ">=3.13"
+dependencies = [
+    "typer (>=0.26.8,<0.27.0)",
+    "rich (>=15.0.0,<16.0.0)",
+    "sqlalchemy (>=2.0.51,<3.0.0)",
+    "sqlparse (>=0.5.5,<0.6.0)",
+    "python-dotenv (>=1.2.2,<2.0.0)",
+    "google-genai (>=2.10.0,<3.0.0)",
+    "sentence-transformers (>=5.6.0,<6.0.0)",
+    "chromadb (>=1.5.9,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)"
+]
