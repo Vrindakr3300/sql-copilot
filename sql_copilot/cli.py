@@ -189,6 +189,28 @@ def run(sql: str):
         else:
             console.print(f"[red]Execution failed: {result}[/red]")
 
+@app.command()
+def agent(question: str):
+    """Asks the agent a question — it will iterate: run queries, observe results, and answer."""
+    if not DEMO_DB_PATH.exists():
+        console.print("[red]Demo database not found. Run 'setup-demo' first.[/red]")
+        raise typer.Exit(1)
+
+    from sql_copilot.embeddings import SchemaRetriever
+    from sql_copilot.agent import SQLAgent
+
+    engine = create_engine(f"sqlite:///{DEMO_DB_PATH}")
+    schema = get_full_schema(engine)
+
+    retriever = SchemaRetriever()
+    retriever.index_schema(schema)
+    relevant_chunks = retriever.retrieve_relevant_tables(question)
+
+    sql_agent = SQLAgent(engine, console=console)
+    console.print("[cyan]Agent thinking...[/cyan]\n")
+    answer = sql_agent.ask(question, relevant_chunks)
+
+    console.print(f"\n[bold green]Final Answer:[/bold green] {answer}")
 
 if __name__ == "__main__":
     app()
