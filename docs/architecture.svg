@@ -1,0 +1,90 @@
+<svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="620" fill="#ffffff"/>
+
+  <!-- User -->
+  <rect x="40" y="270" width="140" height="60" rx="8" fill="#2563eb"/>
+  <text x="110" y="305" fill="white" font-size="16" text-anchor="middle" font-weight="600">User</text>
+
+  <!-- Schema/RAG -->
+  <rect x="260" y="60" width="220" height="90" rx="8" fill="#0891b2"/>
+  <text x="370" y="95" fill="white" font-size="15" text-anchor="middle" font-weight="600">Schema Introspection</text>
+  <text x="370" y="116" fill="white" font-size="12" text-anchor="middle">tables, columns, FKs,</text>
+  <text x="370" y="132" fill="white" font-size="12" text-anchor="middle">sample rows</text>
+
+  <rect x="260" y="190" width="220" height="90" rx="8" fill="#0e7490"/>
+  <text x="370" y="222" fill="white" font-size="15" text-anchor="middle" font-weight="600">RAG Retrieval</text>
+  <text x="370" y="244" fill="white" font-size="12" text-anchor="middle">sentence-transformers</text>
+  <text x="370" y="260" fill="white" font-size="12" text-anchor="middle">+ Chroma vector store</text>
+
+  <!-- Agent loop -->
+  <rect x="540" y="190" width="240" height="120" rx="8" fill="#7c3aed"/>
+  <text x="660" y="222" fill="white" font-size="15" text-anchor="middle" font-weight="600">Agent Loop</text>
+  <text x="660" y="244" fill="white" font-size="12" text-anchor="middle">Gemini tool-calling:</text>
+  <text x="660" y="262" fill="white" font-size="12" text-anchor="middle">run_query / final_answer</text>
+  <text x="660" y="280" fill="white" font-size="12" text-anchor="middle">self-corrects on errors</text>
+  <text x="660" y="298" fill="white" font-size="12" text-anchor="middle">(up to 5 iterations)</text>
+
+  <!-- Safety gate -->
+  <rect x="540" y="350" width="240" height="130" rx="8" fill="#dc2626"/>
+  <text x="660" y="380" fill="white" font-size="15" text-anchor="middle" font-weight="600">Safety Gate</text>
+  <text x="660" y="402" fill="white" font-size="12" text-anchor="middle">classify read-only / mutating</text>
+  <text x="660" y="420" fill="white" font-size="12" text-anchor="middle">dry-run mutations in a</text>
+  <text x="660" y="436" fill="white" font-size="12" text-anchor="middle">rolled-back transaction</text>
+  <text x="660" y="454" fill="white" font-size="12" text-anchor="middle">require explicit human</text>
+  <text x="660" y="470" fill="white" font-size="12" text-anchor="middle">confirmation before commit</text>
+
+  <!-- DB -->
+  <rect x="820" y="370" width="150" height="90" rx="8" fill="#374151"/>
+  <text x="895" y="405" fill="white" font-size="15" text-anchor="middle" font-weight="600">Database</text>
+  <text x="895" y="426" fill="white" font-size="12" text-anchor="middle">Postgres / MySQL</text>
+  <text x="895" y="442" fill="white" font-size="12" text-anchor="middle">SQL Server / SQLite</text>
+
+  <!-- Memory -->
+  <rect x="260" y="350" width="220" height="110" rx="8" fill="#ca8a04"/>
+  <text x="370" y="382" fill="white" font-size="15" text-anchor="middle" font-weight="600">Memory</text>
+  <text x="370" y="404" fill="white" font-size="12" text-anchor="middle">sliding-window chat history</text>
+  <text x="370" y="420" fill="white" font-size="12" text-anchor="middle">+ persisted SQLite</text>
+  <text x="370" y="436" fill="white" font-size="12" text-anchor="middle">query/outcome log</text>
+
+  <!-- Answer back to user -->
+  <rect x="40" y="430" width="140" height="60" rx="8" fill="#16a34a"/>
+  <text x="110" y="465" fill="white" font-size="16" text-anchor="middle" font-weight="600">Answer</text>
+
+  <!-- Arrows -->
+  <line x1="180" y1="290" x2="260" y2="150" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="195" y="200" font-size="11" fill="#444">question</text>
+
+  <line x1="370" y1="150" x2="370" y2="190" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <line x1="480" y1="235" x2="540" y2="235" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="488" y="225" font-size="11" fill="#444">relevant tables</text>
+
+  <line x1="660" y1="310" x2="660" y2="350" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="668" y="335" font-size="11" fill="#444">run_query()</text>
+
+  <line x1="780" y1="415" x2="820" y2="415" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <line x1="780" y1="430" x2="780" y2="430" stroke="none"/>
+  <path d="M820,440 C700,520 480,500 480,460" stroke="#555" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="650" y="510" font-size="11" fill="#444">result observed by agent</text>
+
+  <line x1="480" y1="280" x2="540" y2="220" stroke="#999" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+  <path d="M540,260 C440,330 380,330 370,350" stroke="#555" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="420" y="335" font-size="11" fill="#444">log turn</text>
+
+  <line x1="260" y1="420" x2="180" y2="455" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <path d="M540,250 C300,300 180,330 110,430" stroke="#16a34a" stroke-width="2" fill="none" marker-end="url(#arrow)" stroke-dasharray="6,3"/>
+  <text x="250" y="380" font-size="11" fill="#16a34a">final_answer()</text>
+
+  <!-- Legend -->
+  <rect x="40" y="540" width="14" height="14" fill="#dc2626"/>
+  <text x="60" y="552" font-size="12" fill="#333">Safety-critical path (dry-run + confirm before any write)</text>
+</svg>

@@ -27,3 +27,6 @@ build-backend = "poetry.core.masonry.api"
 dev = [
     "pytest (>=9.1.1,<10.0.0)"
 ]
+
+[project.scripts]
+sql-copilot = "sql_copilot.cli:app"
