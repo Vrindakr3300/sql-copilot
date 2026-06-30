@@ -2,7 +2,6 @@
 CLI entry point for sql-copilot.
 """
 
-import os
 import sqlite3
 from pathlib import Path
 
@@ -11,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from sqlalchemy import create_engine
 
-from sql_copilot.db import ConnectionConfig, DBType, get_engine, test_connection, list_tables
+from sql_copilot.db import test_connection, list_tables
 from sql_copilot.schema import get_full_schema, table_to_text_chunk
 
 app = typer.Typer(help="SQL Co-Pilot — agentic, schema-aware SQL assistant")
@@ -121,9 +120,10 @@ def test_retrieval(question: str):
     for chunk in relevant_chunks:
         console.print(f"- {chunk}")
 
+
 @app.command()
 def ask(question: str):
-    """Asks a natural-language question and gets back a generated SQL query."""
+    """Asks a natural-language question and gets back a generated SQL query (single-shot, no execution)."""
     if not DEMO_DB_PATH.exists():
         console.print("[red]Demo database not found. Run 'setup-demo' first.[/red]")
         raise typer.Exit(1)
@@ -144,6 +144,7 @@ def ask(question: str):
 
     console.print("[bold green]Generated SQL:[/bold green]")
     console.print(sql)
+
 
 @app.command()
 def run(sql: str):
@@ -189,28 +190,39 @@ def run(sql: str):
         else:
             console.print(f"[red]Execution failed: {result}[/red]")
 
+
 @app.command()
-def agent(question: str):
-    """Asks the agent a question — it will iterate: run queries, observe results, and answer."""
+def chat():
+    """Starts an interactive chat session with the SQL agent — remembers context across turns."""
     if not DEMO_DB_PATH.exists():
         console.print("[red]Demo database not found. Run 'setup-demo' first.[/red]")
         raise typer.Exit(1)
 
     from sql_copilot.embeddings import SchemaRetriever
     from sql_copilot.agent import SQLAgent
+    from sql_copilot.memory import SessionMemory
 
     engine = create_engine(f"sqlite:///{DEMO_DB_PATH}")
     schema = get_full_schema(engine)
 
     retriever = SchemaRetriever()
     retriever.index_schema(schema)
-    relevant_chunks = retriever.retrieve_relevant_tables(question)
 
     sql_agent = SQLAgent(engine, console=console)
-    console.print("[cyan]Agent thinking...[/cyan]\n")
-    answer = sql_agent.ask(question, relevant_chunks)
+    memory = SessionMemory()
 
-    console.print(f"\n[bold green]Final Answer:[/bold green] {answer}")
+    console.print("[bold cyan]SQL Co-Pilot chat session started.[/bold cyan] Type 'exit' to quit.\n")
+
+    while True:
+        question = typer.prompt("You")
+        if question.strip().lower() in {"exit", "quit"}:
+            console.print("[cyan]Session ended.[/cyan]")
+            break
+
+        relevant_chunks = retriever.retrieve_relevant_tables(question)
+        answer = sql_agent.ask(question, relevant_chunks, memory=memory)
+        console.print(f"[bold green]Agent:[/bold green] {answer}\n")
+
 
 if __name__ == "__main__":
     app()

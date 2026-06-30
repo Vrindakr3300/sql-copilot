@@ -110,16 +110,23 @@ class SQLAgent:
         answer = input(f"\n⚠️  Agent wants to run a MUTATING query:\n{sql}\nAllow? [y/N]: ")
         return answer.strip().lower() == "y"
 
-    def ask(self, user_question: str, schema_context: list[str]) -> str:
+    def ask(self, user_question: str, schema_context: list[str], memory=None) -> str:
         """Runs the full agent loop and returns the final answer."""
         context_block = "\n".join(schema_context)
+        history_block = memory.get_history_text() if memory else ""
+
+        prompt_text = f"{_SYSTEM_PROMPT}\n\nSchema context:\n{context_block}"
+        if history_block:
+            prompt_text += f"\n\n{history_block}"
+        prompt_text += f"\n\nUser question: {user_question}"
 
         contents = [
-            types.Content(
-                role="user",
-                parts=[types.Part(text=f"{_SYSTEM_PROMPT}\n\nSchema context:\n{context_block}\n\nUser question: {user_question}")],
-            )
+            types.Content(role="user", parts=[types.Part(text=prompt_text)])
         ]
+
+        last_sql = ""
+        last_success = False
+        last_result_summary = ""
 
         for iteration in range(_MAX_ITERATIONS):
             response = self.client.models.generate_content(
@@ -131,6 +138,10 @@ class SQLAgent:
             candidate = response.candidates[0]
             contents.append(candidate.content)
 
+            if not candidate.content.parts:
+                # Empty response from the model — retry once by continuing the loop
+                continue
+
             function_call = None
             for part in candidate.content.parts:
                 if part.function_call:
@@ -138,15 +149,26 @@ class SQLAgent:
                     break
 
             if not function_call:
-                # Model returned plain text instead of a tool call — treat as final answer
-                return candidate.content.parts[0].text
+                answer = candidate.content.parts[0].text
+                if memory:
+                    memory.add_turn(user_question, answer)
+                    memory.log_query(user_question, last_sql, last_success, last_result_summary)
+                return answer
 
             if function_call.name == "final_answer":
-                return function_call.args.get("answer", "No answer provided.")
+                answer = function_call.args.get("answer", "No answer provided.")
+                if memory:
+                    memory.add_turn(user_question, answer)
+                    memory.log_query(user_question, last_sql, last_success, last_result_summary)
+                return answer
 
             if function_call.name == "run_query":
                 sql = function_call.args.get("sql", "")
+                last_sql = sql
                 tool_result = self._handle_run_query(sql)
+                result_data = json.loads(tool_result)
+                last_success = result_data.get("success", False)
+                last_result_summary = tool_result
 
                 contents.append(
                     types.Content(
@@ -162,4 +184,4 @@ class SQLAgent:
                     )
                 )
 
-        return "Reached max iterations without a final answer. Last attempted query may have failed repeatedly."
+        return "Reached max iterations without a final answer."
