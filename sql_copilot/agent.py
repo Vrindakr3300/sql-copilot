@@ -3,6 +3,7 @@ Agentic query loop — Gemini iterates: generate SQL, run it, observe
 the result, and either refine the query or produce a final answer.
 """
 
+import time
 import os
 import json
 from google import genai
@@ -130,6 +131,25 @@ class SQLAgent:
         else:
             answer = input(f"\n⚠️  Agent wants to run a MUTATING query:\n{sql}\nAllow? [y/N]: ")
             return answer.strip().lower() == "y"
+        
+    def _generate_with_retry(self, contents, max_retries: int = 3):
+        """Calls Gemini with exponential backoff on transient server errors (e.g. 503)."""
+        from google.genai import errors as genai_errors
+
+        delay = 2
+        for attempt in range(max_retries):
+            try:
+                return self.client.models.generate_content(
+                    model=_MODEL_NAME,
+                    contents=contents,
+                    config=types.GenerateContentConfig(tools=_TOOLS),
+                )
+            except genai_errors.ServerError as e:
+                if attempt == max_retries - 1:
+                    raise
+                self._log(f"[yellow]Gemini temporarily unavailable, retrying in {delay}s...[/yellow]")
+                time.sleep(delay)
+                delay *= 2
 
     def ask(self, user_question: str, schema_context: list[str], memory=None) -> str:
         """Runs the full agent loop and returns the final answer."""
@@ -150,11 +170,7 @@ class SQLAgent:
         last_result_summary = ""
 
         for iteration in range(_MAX_ITERATIONS):
-            response = self.client.models.generate_content(
-                model=_MODEL_NAME,
-                contents=contents,
-                config=types.GenerateContentConfig(tools=_TOOLS),
-            )
+            response = self._generate_with_retry(contents)
 
             candidate = response.candidates[0]
             contents.append(candidate.content)
