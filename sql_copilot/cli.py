@@ -145,5 +145,50 @@ def ask(question: str):
     console.print("[bold green]Generated SQL:[/bold green]")
     console.print(sql)
 
+@app.command()
+def run(sql: str):
+    """Runs a SQL query against the demo DB, with safety gating for mutations."""
+    if not DEMO_DB_PATH.exists():
+        console.print("[red]Demo database not found. Run 'setup-demo' first.[/red]")
+        raise typer.Exit(1)
+
+    from sql_copilot.safety import classify_query, dry_run, execute_query, QuerySafety
+
+    engine = create_engine(f"sqlite:///{DEMO_DB_PATH}")
+    check = classify_query(sql)
+
+    console.print(f"[cyan]Classification:[/cyan] {check.safety.value} ({check.statement_type})")
+    console.print(f"[cyan]Reason:[/cyan] {check.reason}")
+
+    if check.safety == QuerySafety.READ_ONLY:
+        success, result = execute_query(engine, sql, check.safety)
+        if success:
+            console.print("[bold green]Results:[/bold green]")
+            for row in result:
+                console.print(row)
+        else:
+            console.print(f"[red]Execution failed: {result}[/red]")
+
+    else:
+        console.print("[yellow]This query may mutate data. Running a dry run first...[/yellow]")
+        ok, msg = dry_run(engine, sql)
+        console.print(msg)
+
+        if not ok:
+            console.print("[red]Aborting — query failed validation.[/red]")
+            raise typer.Exit(1)
+
+        confirm = typer.confirm("Dry run passed. Do you want to actually execute this query?")
+        if not confirm:
+            console.print("[yellow]Cancelled by user. No changes made.[/yellow]")
+            raise typer.Exit(0)
+
+        success, result = execute_query(engine, sql, check.safety)
+        if success:
+            console.print(f"[bold green]Executed successfully. Rows affected: {result}[/bold green]")
+        else:
+            console.print(f"[red]Execution failed: {result}[/red]")
+
+
 if __name__ == "__main__":
     app()
