@@ -77,11 +77,21 @@ class SQLAgent:
         else:
             print(msg)
 
+    def _log_sql(self, sql: str):
+        """Pretty-prints SQL with syntax highlighting if a Rich console is available."""
+        if self.console:
+            from rich.syntax import Syntax
+            from rich.panel import Panel
+            syntax = Syntax(sql, "sql", theme="monokai", word_wrap=True)
+            self.console.print(Panel(syntax, title="Agent wants to run", border_style="cyan"))
+        else:
+            print(f"Agent wants to run:\n{sql}")
+
     def _handle_run_query(self, sql: str) -> str:
         """Runs a query through the safety gate and returns a result string for the model."""
         check = classify_query(sql)
-        self._log(f"[cyan]Agent wants to run:[/cyan] {sql}")
-        self._log(f"[cyan]Classification:[/cyan] {check.safety.value}")
+        self._log_sql(sql)
+        self._log(f"[dim]Classification: {check.safety.value}[/dim]")
 
         if check.safety == QuerySafety.READ_ONLY:
             success, result = execute_query(self.engine, sql, check.safety)
@@ -106,9 +116,20 @@ class SQLAgent:
                 return json.dumps({"success": False, "error": result})
 
     def _confirm_mutation(self, sql: str) -> bool:
-        """Override point — default uses input(); CLI can inject a richer confirm."""
-        answer = input(f"\n⚠️  Agent wants to run a MUTATING query:\n{sql}\nAllow? [y/N]: ")
-        return answer.strip().lower() == "y"
+        """Shows a warning panel and confirms before running a mutating query."""
+        if self.console:
+            from rich.syntax import Syntax
+            from rich.panel import Panel
+            syntax = Syntax(sql, "sql", theme="monokai", word_wrap=True)
+            self.console.print(Panel(
+                syntax,
+                title="⚠️  MUTATING QUERY — confirmation required",
+                border_style="red",
+            ))
+            return self.console.input("[bold yellow]Allow this query to run? [y/N]: [/bold yellow]").strip().lower() == "y"
+        else:
+            answer = input(f"\n⚠️  Agent wants to run a MUTATING query:\n{sql}\nAllow? [y/N]: ")
+            return answer.strip().lower() == "y"
 
     def ask(self, user_question: str, schema_context: list[str], memory=None) -> str:
         """Runs the full agent loop and returns the final answer."""

@@ -213,15 +213,23 @@ def chat():
 
     console.print("[bold cyan]SQL Co-Pilot chat session started.[/bold cyan] Type 'exit' to quit.\n")
 
+    from rich.panel import Panel
+    from rich.markdown import Markdown
+
     while True:
-        question = typer.prompt("You")
+        question = console.input("[bold blue]You:[/bold blue] ")
         if question.strip().lower() in {"exit", "quit"}:
             console.print("[cyan]Session ended.[/cyan]")
             break
+        if not question.strip():
+            continue
 
         relevant_chunks = retriever.retrieve_relevant_tables(question)
-        answer = sql_agent.ask(question, relevant_chunks, memory=memory)
-        console.print(f"[bold green]Agent:[/bold green] {answer}\n")
+        with console.status("[cyan]Thinking...[/cyan]", spinner="dots"):
+            answer = sql_agent.ask(question, relevant_chunks, memory=memory)
+
+        console.print(Panel(Markdown(answer), title="Agent", border_style="green", title_align="left"))
+        console.print()
 
 
 if __name__ == "__main__":
